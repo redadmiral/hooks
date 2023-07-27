@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+# Formatting stuff
+bold=$(tput -T linux bold)
+normal=$(tput -T linux sgr0)
+
+# If any command fails, exit immediately with that command's exit status
+set -eo pipefail
+
+echo "${bold}Run Pre-Commit Hooks...${normal}"
+echo "Activate precommit python virtualenv."
+. ${PYENV_ROOT}/versions/precommit/bin/activate
+
+echo -e "\n💄 ${bold}Running Linters...${normal}"
+
+# Run black against all code in the `source_code` directory
+black --quiet **/*.py
+echo "black passed!"
+
+# Run ruff against all code in the `source_code` directory
+ruff --fix  **/*.py
+echo "ruff passed!"
+
+echo -e "\n🛸 ${bold}Running dependency safety check...${normal}"
+
+# Check requirements.txt for vulnerable packages
+safety check --output bare -r requirements.txt
+echo "All dependencies are safe."
+
+# Run unit tests
+
+echo -e "\n✅ ${bold}Run unit tests...${normal}"
+
+echo "Activate $(basename $(pwd)) virtualenv to run tests."
+. ${PYENV_ROOT}/versions/$(basename $(pwd))/bin/activate
+
+python -m pytest --quiet
+echo "All unit tests passed."
+
+echo -e "\n${bold}Pre-commit hooks ran sucessfully. Committing...\n${normal}"
